@@ -76,7 +76,7 @@ def load_datasets(u_comments, u_info) -> Tuple[pd.DataFrame, pd.DataFrame]:
     if u_comments is not None:
         comments = pd.read_csv(u_comments)
     else:
-        comments = pd.read_csv("hotel_comments.csv")
+        comments = pd.read_csv("sample_hotel_comments.csv")
     if u_info is not None:
         info = pd.read_csv(u_info)
     else:
