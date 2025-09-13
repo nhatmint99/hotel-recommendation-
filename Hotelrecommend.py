@@ -48,11 +48,16 @@ how about more most much many any some also been being we he she it its as on in
 if is be do did done me my i
 """.split())
 
-def tokenize(text: str, vi_sw: set, en_sw: set = EN_SW) -> List[str]:
-    text = str(text).lower()
+def tokenize(text, vi_sw: set, en_sw: set = EN_SW) -> List[str]:
+    if isinstance(text, list):
+        text = " ".join(map(str, text))
+    elif not isinstance(text, str):
+        text = str(text)
+    text = text.lower()
     text = re.sub(r"[^a-zA-ZÀ-ỹ\s]", " ", text)
     toks = [t for t in text.split() if t and (t not in vi_sw) and (t not in en_sw)]
     return [t for t in toks if len(t) >= 2]
+
 
 def embed_pdf(bts: bytes, height=900):
     b64 = base64.b64encode(bts).decode("utf-8")
