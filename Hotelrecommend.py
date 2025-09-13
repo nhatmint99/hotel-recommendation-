@@ -9,9 +9,6 @@ import re, io, base64
 from typing import List, Tuple, Dict, Optional
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-# --------- Optional: gensim for TF-IDF ---------
-from gensim import corpora, models, similarities
-
 # --------- Optional: sklearn cosine fallback & charts ---------
 from sklearn.metrics.pairwise import cosine_similarity
 
