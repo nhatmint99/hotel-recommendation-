@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import re, io, base64
 from typing import List, Tuple, Dict, Optional
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # --------- Optional: gensim for TF-IDF ---------
 from gensim import corpora, models, similarities
@@ -147,36 +148,28 @@ hotels_text, tokens_list = build_hotel_docs(comments, info, VI_SW)
 # Content-based (gensim)
 # ==========================
 @st.cache_resource(show_spinner=False)
-def build_cb_index(tokens_list: List[List[str]]):
-    dictionary = corpora.Dictionary(tokens_list)
-    corpus = [dictionary.doc2bow(toks) for toks in tokens_list]
-    tfidf = models.TfidfModel(corpus, smartirs="ntc")
-    index = similarities.SparseMatrixSimilarity(tfidf[corpus], num_features=len(dictionary))
-    return dictionary, tfidf, index
+def build_cb_index(docs):
+    vectorizer = TfidfVectorizer(max_features=10000)
+    tfidf_matrix = vectorizer.fit_transform(docs)
+    return vectorizer, tfidf_matrix
+
+vectorizer, tfidf_matrix = build_cb_index(hotels_text["doc"].tolist())
+
 
 dictionary, tfidf, cb_index = build_cb_index(tokens_list)
 
 # ==========================
 # Similarity matrix (gensim)
 
-def build_similarity_matrix(tokens_list, hotels_text):
-    from gensim import corpora, models, similarities
-    dictionary = corpora.Dictionary(tokens_list)
-    corpus = [dictionary.doc2bow(text) for text in tokens_list]
-    tfidf = models.TfidfModel(corpus)
-    corpus_tfidf = tfidf[corpus]
-
-    index = similarities.MatrixSimilarity(corpus_tfidf, num_features=len(dictionary))
-
-    sims_matrix = []
-    for vec in corpus_tfidf:
-        sims = index[vec]
-        sims_matrix.append(sims)
-
+def build_similarity_matrix():
+    sims_matrix = cosine_similarity(tfidf_matrix)
     df_sims = pd.DataFrame(sims_matrix,
                            index=hotels_text["Hotel_ID"],
                            columns=hotels_text["Hotel_ID"])
     return df_sims
+
+df_sims = build_similarity_matrix()
+
 
 df_sims = build_similarity_matrix(tokens_list, hotels_text)
 
@@ -195,12 +188,11 @@ def recommend_hotels(hotel_id: str, sims_df: pd.DataFrame, hotels_df: pd.DataFra
 
 # ==========================
 def cb_scores_from_text(query: str, top_k=20) -> pd.DataFrame:
-    q_toks = tokenize(query, VI_SW)
-    q_bow  = dictionary.doc2bow(q_toks)
-    sims   = cb_index[tfidf[q_bow]]
-    order  = np.argsort(-sims)
+    q_vec = vectorizer.transform([query])
+    sims = cosine_similarity(q_vec, tfidf_matrix).flatten()
+    order = sims.argsort()[::-1][:top_k]
     rows = []
-    for j in order[:top_k]:
+    for j in order:
         rows.append({
             "Hotel_ID": hotels_text.iloc[j]["Hotel_ID"],
             "Hotel_Name": hotels_text.iloc[j]["Hotel_Name"],
@@ -209,34 +201,40 @@ def cb_scores_from_text(query: str, top_k=20) -> pd.DataFrame:
         })
     return pd.DataFrame(rows)
 
+
 def cb_scores_for_user(reviewer_id: str, score_floor: float = 8.5, top_k=20) -> pd.DataFrame:
     ur = comments[comments["Reviewer ID"] == reviewer_id].dropna(subset=["Score_clean"])
     if ur.empty:
         return pd.DataFrame()
-    weights = (ur["Score_clean"] - score_floor).clip(lower=0)
-    from collections import defaultdict
-    user_vec = defaultdict(float)
-    # Accumulate weighted bow vectors from liked hotels
-    for hid, w in zip(ur["Hotel ID"], weights):
-        idx = hotels_text.index[hotels_text["Hotel_ID"] == hid]
-        if len(idx)==0: 
-            continue
-        bow = dictionary.doc2bow(tokens_list[idx[0]])
-        for term_id, val in bow:
-            user_vec[term_id] += val * float(max(w, 1e-6))
-    sims = cb_index[tfidf[list(user_vec.items())]] if len(user_vec)>0 else np.zeros(len(hotels_text))
-    seen = set(ur["Hotel ID"].tolist())
-    order = np.argsort(-sims)
+    liked_hotels = ur[ur["Score_clean"] >= score_floor]["Hotel ID"].tolist()
+    if not liked_hotels:
+        return pd.DataFrame()
+
+    liked_idx = hotels_text.index[hotels_text["Hotel_ID"].isin(liked_hotels)].tolist()
+    if not liked_idx:
+        return pd.DataFrame()
+
+    # Average vector of liked hotels
+    user_vec = tfidf_matrix[liked_idx].mean(axis=0)
+    sims = cosine_similarity(user_vec, tfidf_matrix).flatten()
+
+    seen = set(liked_hotels)
+    order = sims.argsort()[::-1]
     out = []
     for j in order:
         hid = hotels_text.iloc[j]["Hotel_ID"]
-        if hid in seen: continue
-        out.append({"Hotel_ID": hid,
-                    "Hotel_Name": hotels_text.iloc[j]["Hotel_Name"],
-                    "Hotel_Address": hotels_text.iloc[j].get("Hotel_Address",""),
-                    "cb_score": float(sims[j])})
-        if len(out)>=top_k: break
+        if hid in seen: 
+            continue
+        out.append({
+            "Hotel_ID": hid,
+            "Hotel_Name": hotels_text.iloc[j]["Hotel_Name"],
+            "Hotel_Address": hotels_text.iloc[j].get("Hotel_Address",""),
+            "cb_score": float(sims[j])
+        })
+        if len(out) >= top_k:
+            break
     return pd.DataFrame(out)
+
 
 # ==========================
 # Collaborative (item–item)
