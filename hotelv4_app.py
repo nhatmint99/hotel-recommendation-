@@ -247,7 +247,7 @@ menu = st.sidebar.radio("📑 Menu", [
 # 1) Introduction
 # ==========================
 if menu == "Introduction":
-    st.title("Hotel Recommendation – Agoda (Content-based + Hybrid CF)")
+    st.title("Hotel Recommendation – Agoda (Nhóm H - Trần Nhật Minh)")
     st.markdown("""
 **Mục tiêu**: Gợi ý khách sạn theo **nội dung mô tả + đánh giá** (TF-IDF + cosine), kết hợp **CF item-item** khi có chồng chéo người dùng, và cung cấp EDA/tương tác dự đoán cho dữ liệu mới.
 
