@@ -273,7 +273,7 @@ elif menu == "Business Problem":
 
 **Yêu cầu đề xuất**: cung cấp khuyến nghị khách sạn **phù hợp sở thích** của người dùng hoặc **phù hợp bộ lọc** (sao, địa chỉ, từ khóa), tối ưu **chuyển đổi** trong bối cảnh dữ liệu đánh giá **thưa**.
     """)
-    st.image("hotel_review.avif", caption="Hotel Reviews", use_column_width=True)
+    st.image("hotel_review.img", caption="Hotel Reviews", use_column_width=True)
 
 elif menu == "Evaluation & Report":
     st.header("📊 Evaluation & Report")
