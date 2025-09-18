@@ -64,7 +64,7 @@ def clean_text(text: str, stopwords: set = CUSTOM_STOPWORDS) -> str:
     tokens = text.split()
     tokens = [t for t in tokens if t not in stopwords and len(t) > 1]
     return " ".join(tokens)
-def tokenize(text, vi_sw: set, en_sw: set = EN_SW) -> List[str]:
+def tokenize(text, CUSTOM_STOPWORDS: set, en_sw: set = EN_SW) -> List[str]:
     if isinstance(text, list):
         text = " ".join(map(str, text))
     elif not isinstance(text, str):
