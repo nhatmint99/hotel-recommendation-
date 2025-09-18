@@ -259,7 +259,7 @@ if menu == "Introduction":
 Bạn có thể upload thay thế file ở **Sidebar**.
     """)
     st.image("img/Agoda_img.jpg",
-         caption="Agoda – Online Travel Booking", use_container_width=True)
+         caption="Agoda – Online Travel Booking", use_column_width=True)
 
     # ==========================
     # 2) Business Problem
@@ -273,7 +273,7 @@ elif menu == "Business Problem":
 
 **Yêu cầu đề xuất**: cung cấp khuyến nghị khách sạn **phù hợp sở thích** của người dùng hoặc **phù hợp bộ lọc** (sao, địa chỉ, từ khóa), tối ưu **chuyển đổi** trong bối cảnh dữ liệu đánh giá **thưa**.
     """)
-    st.image("img/hotel_review.avif", caption="Hotel Reviews", use_container_width=True)
+    st.image("img/hotel_review.avif", caption="Hotel Reviews", use_column_width=True)
 
 elif menu == "Evaluation & Report":
     st.header("📊 Evaluation & Report")
